@@ -34,23 +34,49 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case "stats":
         const stats = await fetchChannelStats(resolvedChannelId, apiKey);
+        if (!stats) {
+          // Fallback to demo data if API fails (quota exceeded, etc.)
+          return NextResponse.json({
+            demo: true,
+            message: "YouTube API unavailable. Showing demo data.",
+            data: getDemoData(channel || "iphonemod"),
+          });
+        }
         return NextResponse.json({ data: stats });
 
       case "top-videos":
         const topVideos = await fetchTopVideos(resolvedChannelId, apiKey, 5);
+        if (!topVideos || topVideos.length === 0) {
+          const demoData = getDemoData(channel || "iphonemod");
+          return NextResponse.json({
+            demo: true,
+            message: "YouTube API unavailable. Showing demo data.",
+            data: demoData.topVideos,
+          });
+        }
         return NextResponse.json({ data: topVideos });
 
       case "analytics":
       default:
         const analytics = await getYouTubeAnalytics(resolvedChannelId, apiKey);
+        if (!analytics) {
+          // Fallback to demo data if API fails (quota exceeded, etc.)
+          return NextResponse.json({
+            demo: true,
+            message: "YouTube API unavailable. Showing demo data.",
+            data: getDemoData(channel || "iphonemod"),
+          });
+        }
         return NextResponse.json({ data: analytics });
     }
   } catch (error) {
     console.error("YouTube API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch YouTube data" },
-      { status: 500 }
-    );
+    // Fallback to demo data on error
+    return NextResponse.json({
+      demo: true,
+      message: "YouTube API error. Showing demo data.",
+      data: getDemoData(channel || "iphonemod"),
+    });
   }
 }
 
