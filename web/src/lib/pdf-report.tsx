@@ -380,7 +380,7 @@ export function CampaignReportDocument({ data }: { data: CampaignReportData }) {
                 key={platform.name}
                 style={[
                   styles.tableRow,
-                  index % 2 === 1 && styles.tableRowAlt,
+                  ...(index % 2 === 1 ? [styles.tableRowAlt] : []),
                 ]}
               >
                 <Text style={[styles.tableCell, { width: "25%", fontWeight: 700 }]}>
@@ -451,7 +451,7 @@ export function CampaignReportDocument({ data }: { data: CampaignReportData }) {
                 key={index}
                 style={[
                   styles.tableRow,
-                  index % 2 === 1 && styles.tableRowAlt,
+                  ...(index % 2 === 1 ? [styles.tableRowAlt] : []),
                 ]}
               >
                 <Text
