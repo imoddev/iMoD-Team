@@ -397,7 +397,6 @@ export function CampaignReportDocument({ data }: { data: CampaignReportData }) {
                 </Text>
                 <Text
                   style={[styles.tableCell, { width: "20%", fontSize: 8 }]}
-                  numberOfLines={1}
                 >
                   {platform.topPost || "-"}
                 </Text>
@@ -456,7 +455,6 @@ export function CampaignReportDocument({ data }: { data: CampaignReportData }) {
               >
                 <Text
                   style={[styles.tableCell, { width: "35%" }]}
-                  numberOfLines={2}
                 >
                   {content.title}
                 </Text>
