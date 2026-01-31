@@ -96,10 +96,11 @@ function parseRSSXML(xml: string, source: RSSSource): FeedItem[] {
         item.querySelector("creator")?.textContent?.trim();
 
       // Try to extract thumbnail from various sources
-      let thumbnail =
+      let thumbnail: string | undefined =
         item.querySelector("media\\:thumbnail")?.getAttribute("url") ||
         item.querySelector("thumbnail")?.getAttribute("url") ||
-        item.querySelector("enclosure[type^='image']")?.getAttribute("url");
+        item.querySelector("enclosure[type^='image']")?.getAttribute("url") ||
+        undefined;
 
       // Try to extract from content or description
       if (!thumbnail && (content || description)) {
@@ -141,7 +142,7 @@ function parseRSSXML(xml: string, source: RSSSource): FeedItem[] {
         entry.querySelector("published")?.textContent?.trim();
       const author = entry.querySelector("author name")?.textContent?.trim();
 
-      let thumbnail = entry.querySelector("media\\:thumbnail")?.getAttribute("url");
+      let thumbnail: string | undefined = entry.querySelector("media\\:thumbnail")?.getAttribute("url") || undefined;
       if (!thumbnail && (content || summary)) {
         const imgMatch = (content || summary || "").match(/<img[^>]+src=["']([^"']+)["']/i);
         if (imgMatch) {
