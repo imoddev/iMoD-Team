@@ -37,7 +37,7 @@ export interface YouTubeAnalytics {
 // iPhoneMod and EVMoD Channel IDs
 export const YOUTUBE_CHANNELS = {
   iphonemod: {
-    id: "UCqRSPS9Y6GwG6rf15ymJyqQ", // iPhoneMod channel ID
+    id: "UCC1hWOd-EtRNuqVKkOyPLXQ", // @imodofficial channel ID
     name: "iPhoneMod",
   },
   evmod: {
