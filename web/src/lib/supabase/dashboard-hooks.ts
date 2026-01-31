@@ -50,14 +50,14 @@ export function useDashboardStats() {
         .in("status", ["in_progress", "agreed"]);
 
       const activeCampaigns = campaigns?.length || 0;
-      const totalRevenue = campaigns?.reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
+      const totalRevenue = campaigns?.reduce((sum: number, c: { budget?: number | string }) => sum + (Number(c.budget) || 0), 0) || 0;
 
       // Get content posts for reach (estimate)
       const { data: posts } = await supabase
         .from("content_posts")
         .select("reach");
       
-      const totalReach = posts?.reduce((sum, p) => sum + (p.reach || 0), 0) || 0;
+      const totalReach = posts?.reduce((sum: number, p: { reach?: number }) => sum + (p.reach || 0), 0) || 0;
 
       setStats({
         clients: { total: clientCount || 0, change: 12 }, // TODO: calculate real change
@@ -115,7 +115,7 @@ export function usePipelineData() {
         .select("status, budget");
 
       if (campaigns) {
-        const grouped = campaigns.reduce((acc, c) => {
+        const grouped = campaigns.reduce((acc: Record<string, { count: number; value: number }>, c: { status?: string; budget?: number | string }) => {
           const status = c.status || "lead";
           if (!acc[status]) {
             acc[status] = { count: 0, value: 0 };
@@ -503,12 +503,13 @@ export function usePlatformStats() {
         .select("platform, reach");
 
       if (posts) {
+        type PostItem = { platform?: string; reach?: number };
         // Group by platform-like categories
-        const iphonemod = posts.filter((p) =>
-          ["facebook", "youtube", "website"].includes(p.platform)
+        const iphonemod = posts.filter((p: PostItem) =>
+          ["facebook", "youtube", "website"].includes(p.platform || "")
         );
-        const evmod = posts.filter((p) =>
-          ["tiktok", "instagram", "x_twitter"].includes(p.platform)
+        const evmod = posts.filter((p: PostItem) =>
+          ["tiktok", "instagram", "x_twitter"].includes(p.platform || "")
         );
 
         setStats([
@@ -516,13 +517,13 @@ export function usePlatformStats() {
             platform: "iPhoneMod",
             articles: iphonemod.length,
             videos: Math.floor(iphonemod.length * 0.4),
-            reach: iphonemod.reduce((sum, p) => sum + (p.reach || 0), 0),
+            reach: iphonemod.reduce((sum: number, p: PostItem) => sum + (p.reach || 0), 0),
           },
           {
             platform: "EVMoD",
             articles: evmod.length,
             videos: Math.floor(evmod.length * 0.5),
-            reach: evmod.reduce((sum, p) => sum + (p.reach || 0), 0),
+            reach: evmod.reduce((sum: number, p: PostItem) => sum + (p.reach || 0), 0),
           },
         ]);
       }
@@ -580,18 +581,19 @@ export function useWeeklyTrend() {
         const dayStart = new Date(date.setHours(0, 0, 0, 0));
         const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
+        type TaskItem = { completed_at?: string; task_type?: string };
         const dayTasks =
-          tasks?.filter((t) => {
-            const completed = new Date(t.completed_at);
+          tasks?.filter((t: TaskItem) => {
+            const completed = new Date(t.completed_at || "");
             return completed >= dayStart && completed <= dayEnd;
           }) || [];
 
         days.push({
           day: dayNames[dayStart.getDay()],
           content: dayTasks.filter(
-            (t) => t.task_type === "article" || t.task_type === "social_post"
+            (t: TaskItem) => t.task_type === "article" || t.task_type === "social_post"
           ).length,
-          video: dayTasks.filter((t) => t.task_type === "video").length,
+          video: dayTasks.filter((t: TaskItem) => t.task_type === "video").length,
         });
       }
 
