@@ -58,7 +58,8 @@ export async function fetchChannelStats(
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error("YouTube API error:", response.status);
+      const errorBody = await response.text();
+      console.error("YouTube API error:", response.status, errorBody);
       return null;
     }
 
