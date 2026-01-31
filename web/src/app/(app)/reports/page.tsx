@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Download,
   FileText,
   Video,
@@ -13,10 +12,14 @@ import {
   Eye,
   ThumbsUp,
   Calendar,
-  Filter,
   ArrowUpRight,
   ArrowDownRight,
+  RefreshCw,
+  AlertCircle,
+  Youtube,
 } from "lucide-react";
+import { useYouTubeData, formatYouTubeStats } from "@/lib/hooks/useYouTubeData";
+import { formatNumber } from "@/lib/youtube-api";
 
 type ReportPeriod = "week" | "month" | "quarter" | "year";
 type ReportType = "content" | "video" | "sales" | "team";
@@ -25,7 +28,7 @@ interface MetricCard {
   label: string;
   value: string;
   change: number;
-  icon: any;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   color: string;
 }
 
@@ -34,13 +37,6 @@ const contentMetrics: MetricCard[] = [
   { label: "ยอดวิวรวม", value: "2.4M", change: 18, icon: Eye, color: "text-blue-400" },
   { label: "Engagement Rate", value: "4.2%", change: -0.3, icon: ThumbsUp, color: "text-purple-400" },
   { label: "เวลาอ่านเฉลี่ย", value: "3:24", change: 8, icon: Calendar, color: "text-orange-400" },
-];
-
-const videoMetrics: MetricCard[] = [
-  { label: "วิดีโอทั้งหมด", value: "48", change: 6, icon: Video, color: "text-red-400" },
-  { label: "ยอดวิวรวม", value: "1.8M", change: 24, icon: Eye, color: "text-blue-400" },
-  { label: "Subscribers ใหม่", value: "+2.4K", change: 15, icon: Users, color: "text-green-400" },
-  { label: "Watch Time", value: "45K hrs", change: 22, icon: Calendar, color: "text-yellow-400" },
 ];
 
 const salesMetrics: MetricCard[] = [
@@ -58,14 +54,6 @@ const topContent = [
   { title: "Galaxy S26 vs iPhone 17", views: "98K", engagement: "3.9%" },
 ];
 
-const topVideos = [
-  { title: "iPhone Fold จะมาจริงไหม? (Shorts)", views: "450K", likes: "18.5K" },
-  { title: "สรุปงาน CES 2026", views: "125K", likes: "4.2K" },
-  { title: "ทำไม EV ถึงขายดีในไทย?", views: "89K", likes: "3.1K" },
-  { title: "รีวิว Pixel 10 Pro", views: "67K", likes: "2.4K" },
-  { title: "MacBook Pro M5 Preview", views: "54K", likes: "2.1K" },
-];
-
 const teamPerformance = [
   { name: "ชาร์ท", role: "Content Writer", tasks: 24, completed: 22, rating: 4.8 },
   { name: "มิน", role: "Content Writer", tasks: 18, completed: 17, rating: 4.6 },
@@ -77,11 +65,35 @@ const teamPerformance = [
 export default function ReportsPage() {
   const [period, setPeriod] = useState<ReportPeriod>("month");
   const [reportType, setReportType] = useState<ReportType>("content");
+  const [youtubeChannel, setYoutubeChannel] = useState<"iphonemod" | "evmod">("iphonemod");
+  
+  // YouTube data hook
+  const { data: youtubeData, loading: youtubeLoading, error: youtubeError, isDemo, refetch } = useYouTubeData(youtubeChannel);
+  const formattedYouTubeStats = formatYouTubeStats(youtubeData);
+
+  // Dynamic video metrics from YouTube
+  const getVideoMetrics = (): MetricCard[] => {
+    if (!formattedYouTubeStats) {
+      return [
+        { label: "วิดีโอทั้งหมด", value: "-", change: 0, icon: Video, color: "text-red-400" },
+        { label: "ยอดวิวรวม", value: "-", change: 0, icon: Eye, color: "text-blue-400" },
+        { label: "Subscribers ใหม่", value: "-", change: 0, icon: Users, color: "text-green-400" },
+        { label: "Watch Time", value: "-", change: 0, icon: Calendar, color: "text-yellow-400" },
+      ];
+    }
+
+    return [
+      { label: "วิดีโอทั้งหมด", value: formattedYouTubeStats.totalVideos, change: 6, icon: Video, color: "text-red-400" },
+      { label: "ยอดวิวรวม", value: formattedYouTubeStats.totalViews, change: formattedYouTubeStats.viewsChange, icon: Eye, color: "text-blue-400" },
+      { label: "Subscribers ใหม่", value: formattedYouTubeStats.totalSubscribers, change: formattedYouTubeStats.subscriberChange, icon: Users, color: "text-green-400" },
+      { label: "Watch Time", value: formattedYouTubeStats.watchTimeHours, change: 22, icon: Calendar, color: "text-yellow-400" },
+    ];
+  };
 
   const getMetrics = () => {
     switch (reportType) {
       case "content": return contentMetrics;
-      case "video": return videoMetrics;
+      case "video": return getVideoMetrics();
       case "sales": return salesMetrics;
       default: return contentMetrics;
     }
@@ -135,6 +147,51 @@ export default function ReportsPage() {
         ))}
       </div>
 
+      {/* YouTube Channel Selector (for Video tab) */}
+      {reportType === "video" && (
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Youtube size={20} className="text-red-500" />
+            <span className="text-gray-400 text-sm">YouTube Channel:</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setYoutubeChannel("iphonemod")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                youtubeChannel === "iphonemod"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+              }`}
+            >
+              iPhoneMod
+            </button>
+            <button
+              onClick={() => setYoutubeChannel("evmod")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                youtubeChannel === "evmod"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+              }`}
+            >
+              EVMoD
+            </button>
+          </div>
+          <button
+            onClick={refetch}
+            disabled={youtubeLoading}
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <RefreshCw size={16} className={youtubeLoading ? "animate-spin" : ""} />
+          </button>
+          {isDemo && (
+            <span className="flex items-center gap-1 text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">
+              <AlertCircle size={12} />
+              Demo Data (ยังไม่ได้ใส่ API Key)
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Metrics Cards */}
       {reportType !== "team" && (
         <div className="grid grid-cols-4 gap-4 mb-6">
@@ -149,7 +206,13 @@ export default function ReportsPage() {
                   <Icon size={18} className={metric.color} />
                 </div>
                 <div className="flex items-end justify-between">
-                  <span className="text-2xl font-bold text-white">{metric.value}</span>
+                  <span className="text-2xl font-bold text-white">
+                    {youtubeLoading && reportType === "video" ? (
+                      <span className="animate-pulse">...</span>
+                    ) : (
+                      metric.value
+                    )}
+                  </span>
                   <div className={`flex items-center gap-1 text-sm ${isPositive ? "text-green-400" : "text-red-400"}`}>
                     {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                     {Math.abs(metric.change)}%
@@ -204,7 +267,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Video Report */}
+      {/* Video Report - Now with YouTube Data */}
       {reportType === "video" && (
         <div className="grid grid-cols-2 gap-6">
           {/* Chart */}
@@ -225,27 +288,55 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Top Videos */}
+          {/* Top Videos - From YouTube */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <h3 className="text-lg font-semibold text-white mb-4">🎬 Top Videos</h3>
-            <div className="space-y-3">
-              {topVideos.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-gray-500 w-6">#{idx + 1}</span>
-                    <span className="text-sm text-white truncate max-w-[200px]">{item.title}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-gray-400 flex items-center gap-1">
-                      <Eye size={14} /> {item.views}
-                    </span>
-                    <span className="text-red-400 flex items-center gap-1">
-                      <ThumbsUp size={14} /> {item.likes}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">🎬 Top Videos</h3>
+              {isDemo && (
+                <span className="text-xs text-yellow-500">(Demo)</span>
+              )}
             </div>
+            
+            {youtubeLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center justify-between py-2 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-gray-700 rounded" />
+                      <div className="w-48 h-4 bg-gray-700 rounded" />
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-16 h-4 bg-gray-700 rounded" />
+                      <div className="w-16 h-4 bg-gray-700 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : youtubeError ? (
+              <div className="text-center text-red-400 py-8">
+                <AlertCircle size={32} className="mx-auto mb-2" />
+                <p>{youtubeError}</p>
+              </div>
+            ) : formattedYouTubeStats ? (
+              <div className="space-y-3">
+                {formattedYouTubeStats.topVideos.map((video, idx) => (
+                  <div key={video.videoId} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-gray-500 w-6">#{idx + 1}</span>
+                      <span className="text-sm text-white truncate max-w-[200px]">{video.title}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Eye size={14} /> {video.viewsFormatted}
+                      </span>
+                      <span className="text-red-400 flex items-center gap-1">
+                        <ThumbsUp size={14} /> {video.likesFormatted}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       )}
